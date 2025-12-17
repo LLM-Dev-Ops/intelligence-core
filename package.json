@@ -1,0 +1,27 @@
+{
+  "name": "@llm-devops/intelligence-core",
+  "version": "0.1.0",
+  "description": "LLM DevOps Intelligence Core - Layer 3 aggregation and intelligence service",
+  "main": "dist/lib.js",
+  "bin": {
+    "intelligence-core": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/**/*.test.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "llm-devops",
+    "intelligence",
+    "layer-3",
+    "aggregation"
+  ],
+  "author": "LLM DevOps",
+  "license": "SEE LICENSE IN LICENSE",
+  "devDependencies": {
+    "@types/node": "^22.19.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
