@@ -17,6 +17,8 @@ Intelligence Core is the top-layer intelligence aggregation service in the LLM D
 - **Analytics-Hub**: Aggregated analytics and trends
 - **Schema-Registry**: Schema contracts and validation
 
+All adapters are thin facades over the six canonical Phase-1/2 systems; no additional upstream systems are introduced by this core.
+
 ### Core Responsibilities
 
 1. **Data Aggregation**: Collect and unify signals from all Layer 2 services
