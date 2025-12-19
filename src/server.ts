@@ -28,7 +28,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     switch (pathname) {
       case '/':
       case '/health':
-        sendJson(res, 200, { status: 'healthy' });
+        sendJson(res, 200, {
+          status: 'healthy',
+          service: 'intelligence-core',
+          version: process.env.npm_package_version || 'unknown'
+        });
         break;
 
       case '/summary':
