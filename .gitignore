@@ -34,3 +34,7 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# Google Cloud SDK
+google-cloud-sdk/
+google-cloud-cli-*.tar.gz
