@@ -20,3 +20,14 @@ export {
   QueryOptions,
   SystemQueryResult
 } from './query.service.js';
+
+export {
+  ExecutionGraphBuilder,
+  AgentSpanInput,
+  InstrumentedAdapterResponse
+} from './execution-span-builder.js';
+
+export type { ValidationResult } from './execution-graph-validator.js';
+export { validateExecutionGraph } from './execution-graph-validator.js';
+
+export { InstrumentedAggregatorService } from './instrumented-aggregator.service.js';

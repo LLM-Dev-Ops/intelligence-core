@@ -15,11 +15,14 @@ import {
   QueryOptions,
   TimeRange,
   SystemQueryResult,
+  InstrumentedAggregatorService,
 } from './services';
 import { createMockAdapters } from './adapters';
+import type { CoreExecutionResult } from './types/execution-span';
 
 export class IntelligenceCore {
   private aggregator: IntelligenceAggregatorService;
+  private instrumentedAggregator: InstrumentedAggregatorService;
   private queryService: QueryService;
   private initialized = false;
 
@@ -27,6 +30,14 @@ export class IntelligenceCore {
     // Initialize with mock adapters for simulator compatibility
     const adapters = createMockAdapters();
     this.aggregator = new IntelligenceAggregatorService(
+      adapters.observatory,
+      adapters.latencyLens,
+      adapters.schemaRegistry,
+      adapters.benchmark,
+      adapters.telemetry,
+      adapters.anomaly
+    );
+    this.instrumentedAggregator = new InstrumentedAggregatorService(
       adapters.observatory,
       adapters.latencyLens,
       adapters.schemaRegistry,
@@ -97,6 +108,38 @@ export class IntelligenceCore {
   async getAvailableSystems(): Promise<string[]> {
     await this.initialize();
     return this.queryService.getAvailableSystems();
+  }
+
+  /**
+   * Get intelligence summary with full execution graph
+   */
+  async getSummaryInstrumented(): Promise<CoreExecutionResult<IntelligenceSummary>> {
+    await this.initialize();
+    return this.instrumentedAggregator.generateSummary();
+  }
+
+  /**
+   * Get drift analysis with full execution graph
+   */
+  async getDriftInstrumented(): Promise<CoreExecutionResult<DriftAnalysis>> {
+    await this.initialize();
+    return this.instrumentedAggregator.getDriftAnalysis();
+  }
+
+  /**
+   * Get performance overview with full execution graph
+   */
+  async getPerformanceInstrumented(): Promise<CoreExecutionResult<PerformanceOverview>> {
+    await this.initialize();
+    return this.instrumentedAggregator.getPerformanceOverview();
+  }
+
+  /**
+   * Aggregate intelligence signals with full execution graph
+   */
+  async aggregateIntelligenceInstrumented(): Promise<CoreExecutionResult<IntelligenceSignal[]>> {
+    await this.initialize();
+    return this.instrumentedAggregator.aggregateIntelligence();
   }
 
   /**

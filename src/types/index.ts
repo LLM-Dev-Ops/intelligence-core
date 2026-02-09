@@ -175,3 +175,5 @@ export interface IntelligenceSummary {
   }>;
   metadata?: Record<string, unknown>;
 }
+
+export * from './execution-span';

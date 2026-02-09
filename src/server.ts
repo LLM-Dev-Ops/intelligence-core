@@ -6,10 +6,12 @@ import {
   handleQuerySignals,
   initializeHandlers,
 } from './handlers';
-import { IntelligenceAggregatorService, QueryService } from './services';
+import { IntelligenceAggregatorService, QueryService, InstrumentedAggregatorService } from './services';
 import { createMockAdapters } from './adapters';
 
 const PORT = parseInt(process.env.PORT || '8080', 10);
+
+let instrumentedAggregator: InstrumentedAggregatorService;
 
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -68,6 +70,24 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         break;
       }
 
+      case '/v2/summary': {
+        const result = await instrumentedAggregator.generateSummary();
+        sendJson(res, result.success ? 200 : 500, result);
+        break;
+      }
+
+      case '/v2/drift': {
+        const result = await instrumentedAggregator.getDriftAnalysis();
+        sendJson(res, result.success ? 200 : 500, result);
+        break;
+      }
+
+      case '/v2/performance': {
+        const result = await instrumentedAggregator.getPerformanceOverview();
+        sendJson(res, result.success ? 200 : 500, result);
+        break;
+      }
+
       default:
         sendJson(res, 404, { error: 'Not found' });
     }
@@ -96,6 +116,15 @@ async function main(): Promise<void> {
   query.storeSignals(signals);
 
   initializeHandlers(aggregator, query);
+
+  instrumentedAggregator = new InstrumentedAggregatorService(
+    adapters.observatory,
+    adapters.latencyLens,
+    adapters.schemaRegistry,
+    adapters.benchmark,
+    adapters.telemetry,
+    adapters.anomaly
+  );
 
   const server = createServer((req, res) => {
     handleRequest(req, res).catch((err) => {

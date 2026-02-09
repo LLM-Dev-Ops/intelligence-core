@@ -34,6 +34,19 @@ export type {
 // Re-export types from types module
 export * from './types';
 
+// Re-export execution span instrumentation
+export {
+  InstrumentedAggregatorService,
+  ExecutionGraphBuilder,
+  validateExecutionGraph,
+} from './services';
+
+export type {
+  AgentSpanInput,
+  InstrumentedAdapterResponse,
+  ValidationResult,
+} from './services';
+
 // Re-export handlers for advanced use cases
 export {
   handleGetSummary,
