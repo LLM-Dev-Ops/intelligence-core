@@ -3,7 +3,12 @@
  *
  * Core orchestration service that consumes outputs from integrated systems
  * and correlates them into a unified intelligence view.
+ *
+ * When an EventBus is attached, emits execution_completed after each
+ * generateSummary cycle so lifecycle subscribers can react.
  */
+
+import type { EventBus } from '../events/event-bus';
 
 export interface IntelligenceSignal {
   source: string;
@@ -56,6 +61,8 @@ interface GenericAdapter {
 }
 
 export class IntelligenceAggregatorService {
+  private eventBus: EventBus | null = null;
+
   constructor(
     private observatoryAdapter: GenericAdapter,
     private latencyLensAdapter: GenericAdapter,
@@ -64,6 +71,10 @@ export class IntelligenceAggregatorService {
     private telemetryAdapter: GenericAdapter,
     private anomalyAdapter: GenericAdapter
   ) {}
+
+  setEventBus(eventBus: EventBus): void {
+    this.eventBus = eventBus;
+  }
 
   /**
    * Collects signals from all integrated systems
@@ -143,25 +154,41 @@ export class IntelligenceAggregatorService {
   }
 
   /**
-   * Produces unified IntelligenceSummary
+   * Produces unified IntelligenceSummary.
+   * Emits execution_completed when an EventBus is attached.
    */
   async generateSummary(): Promise<IntelligenceSummary> {
+    const startTime = Date.now();
     const signals = await this.aggregateIntelligence();
     const correlatedSignals = this.correlateSignals(signals);
     const driftAnalysis = await this.getDriftAnalysis();
     const performanceOverview = await this.getPerformanceOverview();
     const anomalies = this.extractAnomalies(signals);
 
-    const summary = this.buildSummaryText(driftAnalysis, performanceOverview, anomalies);
+    const summaryText = this.buildSummaryText(driftAnalysis, performanceOverview, anomalies);
 
-    return {
+    const result: IntelligenceSummary = {
       timestamp: new Date(),
       driftAnalysis,
       performanceOverview,
       correlatedSignals,
       anomalies,
-      summary
+      summary: summaryText
     };
+
+    if (this.eventBus) {
+      await this.eventBus.emit('execution_completed', {
+        timestamp: result.timestamp,
+        operation: 'generateSummary',
+        signals,
+        summary: result,
+        driftAnalysis,
+        performanceOverview,
+        durationMs: Date.now() - startTime,
+      });
+    }
+
+    return result;
   }
 
   /**

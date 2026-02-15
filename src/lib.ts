@@ -56,5 +56,21 @@ export {
   initializeHandlers,
 } from './handlers';
 
+// Re-export event bus and lifecycle subscriber
+export { EventBus } from './events';
+export type {
+  ExecutionCompletedEvent,
+  LifecycleEventMap,
+  LifecycleEventName,
+  LifecycleEventHandler,
+} from './events';
+
+export { ExecutionLifecycleSubscriber } from './subscribers';
+export type {
+  TelemetryAggregate,
+  DriftDelta,
+  AnalyticsUpdate,
+} from './subscribers';
+
 // Library version
 export const VERSION = '0.1.0';

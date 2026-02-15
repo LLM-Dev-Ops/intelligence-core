@@ -18,12 +18,17 @@ import {
   InstrumentedAggregatorService,
 } from './services';
 import { createMockAdapters } from './adapters';
+import { EventBus } from './events/event-bus';
+import { ExecutionLifecycleSubscriber } from './subscribers/execution-lifecycle.subscriber';
+import type { AnalyticsUpdate } from './subscribers/execution-lifecycle.subscriber';
 import type { CoreExecutionResult } from './types/execution-span';
 
 export class IntelligenceCore {
   private aggregator: IntelligenceAggregatorService;
   private instrumentedAggregator: InstrumentedAggregatorService;
   private queryService: QueryService;
+  private eventBus: EventBus;
+  private lifecycleSubscriber: ExecutionLifecycleSubscriber;
   private initialized = false;
 
   constructor() {
@@ -46,6 +51,14 @@ export class IntelligenceCore {
       adapters.anomaly
     );
     this.queryService = new QueryService();
+
+    // Wire lifecycle event bus and subscriber
+    this.eventBus = new EventBus();
+    this.aggregator.setEventBus(this.eventBus);
+    this.lifecycleSubscriber = new ExecutionLifecycleSubscriber(
+      this.eventBus,
+      this.queryService
+    );
   }
 
   /**
@@ -143,10 +156,30 @@ export class IntelligenceCore {
   }
 
   /**
+   * Get the latest analytics update from the lifecycle subscriber
+   */
+  getLatestAnalyticsUpdate(): AnalyticsUpdate | null {
+    return this.lifecycleSubscriber.getLatestAnalyticsUpdate();
+  }
+
+  /**
+   * Access the event bus for custom lifecycle subscriptions
+   */
+  getEventBus(): EventBus {
+    return this.eventBus;
+  }
+
+  /**
    * Clear all stored data (useful for testing)
    */
   clear(): void {
     this.queryService.clear();
+    this.eventBus.removeAllListeners();
+    this.lifecycleSubscriber.dispose();
+    this.lifecycleSubscriber = new ExecutionLifecycleSubscriber(
+      this.eventBus,
+      this.queryService
+    );
     this.initialized = false;
   }
 }
