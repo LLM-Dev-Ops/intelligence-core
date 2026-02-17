@@ -4,6 +4,7 @@ import {
   handleGetDrift,
   handleGetPerformance,
   handleQuerySignals,
+  handleIngestTelemetry,
   initializeHandlers,
 } from './handlers';
 import { IntelligenceAggregatorService, QueryService, InstrumentedAggregatorService } from './services';
@@ -67,6 +68,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         };
 
         sendJson(res, 200, await handleQuerySignals(system, timeRange, options));
+        break;
+      }
+
+      case '/v1/ingest/telemetry': {
+        const result = await handleIngestTelemetry(req);
+        sendJson(res, result.status, result.body);
         break;
       }
 
