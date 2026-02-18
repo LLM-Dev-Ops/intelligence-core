@@ -1,19 +1,22 @@
 import { IncomingMessage } from 'http';
 
-const OBSERVATORY_URL = process.env.LLM_OBSERVATORY_URL
+const TEST_BENCH_URL = process.env.TEST_BENCH_ENDPOINT
+  || 'https://llm-test-bench-1062287243982.us-central1.run.app';
+const OBSERVATORY_URL = process.env.OBSERVATORY_ENDPOINT
   || 'https://llm-observatory-1062287243982.us-central1.run.app';
-const ANALYTICS_HUB_URL = process.env.LLM_ANALYTICS_HUB_URL
-  || 'https://llm-analytics-hub-1062287243982.us-central1.run.app';
-const SENTINEL_URL = process.env.LLM_SENTINEL_URL
-  || 'https://llm-sentinel-prod-1062287243982.us-central1.run.app';
-const LATENCY_LENS_URL = process.env.LLM_LATENCY_LENS_URL
+const SENTINEL_URL = process.env.SENTINEL_ENDPOINT
+  || 'https://llm-sentinel-1062287243982.us-central1.run.app';
+const LATENCY_LENS_URL = process.env.LATENCY_LENS_ENDPOINT
   || 'https://llm-latency-lens-1062287243982.us-central1.run.app';
+const ANALYTICS_HUB_URL = process.env.ANALYTICS_ENDPOINT
+  || 'https://llm-analytics-hub-1062287243982.us-central1.run.app';
 
 interface TelemetryPayload {
-  event: string;
   source: string;
-  timing?: number;
-  [key: string]: unknown;
+  event_type: string;
+  execution_id: string;
+  timestamp: string;
+  payload: Record<string, unknown>;
 }
 
 function parseBody(req: IncomingMessage): Promise<TelemetryPayload> {
@@ -40,6 +43,14 @@ function postJson(url: string, body: unknown): Promise<Response> {
   });
 }
 
+const LAYER1_TARGETS = [
+  { name: 'test-bench', url: () => `${TEST_BENCH_URL}/api/v1/telemetry` },
+  { name: 'observatory', url: () => `${OBSERVATORY_URL}/api/v1/observations` },
+  { name: 'sentinel', url: () => `${SENTINEL_URL}/api/v1/events` },
+  { name: 'latency-lens', url: () => `${LATENCY_LENS_URL}/api/v1/metrics` },
+  { name: 'analytics-hub', url: () => `${ANALYTICS_HUB_URL}/api/v1/events` },
+];
+
 export async function handleIngestTelemetry(
   req: IncomingMessage
 ): Promise<{ status: number; body: unknown }> {
@@ -47,43 +58,38 @@ export async function handleIngestTelemetry(
     return { status: 405, body: { error: 'Method not allowed' } };
   }
 
-  let payload: TelemetryPayload;
+  let telemetry: TelemetryPayload;
   try {
-    payload = await parseBody(req);
+    telemetry = await parseBody(req);
   } catch {
     return { status: 400, body: { error: 'Invalid JSON body' } };
   }
 
-  const timestamp = new Date().toISOString();
-  const routed_to: string[] = ['observatory', 'analytics-hub', 'sentinel'];
+  console.log(
+    `[telemetry-ingest] source=${telemetry.source} execution_id=${telemetry.execution_id}`
+  );
 
-  const forwards: Promise<unknown>[] = [
-    postJson(`${OBSERVATORY_URL}/api/v1/telemetry/ingest`, payload),
-    postJson(`${ANALYTICS_HUB_URL}/api/v1/events`, payload),
-    postJson(`${SENTINEL_URL}/api/v1/events`, {
-      event_type: payload.event,
-      source: payload.source,
-      data: payload,
-      timestamp,
-    }),
-  ];
-
-  if (payload.timing !== undefined) {
-    routed_to.push('latency-lens');
-    forwards.push(
-      postJson(`${LATENCY_LENS_URL}/api/v1/metrics`, {
-        source: payload.source,
-        latency_ms: payload.timing,
-        timestamp,
+  // Fire-and-forget fanout to Layer 1 services
+  Promise.allSettled(
+    LAYER1_TARGETS.map(({ name, url }) =>
+      postJson(url(), telemetry).catch((err) => {
+        console.warn(`[telemetry-ingest] fanout to ${name} failed:`, err);
+        throw err;
       })
-    );
-  }
-
-  // Fire-and-forget: don't block the response
-  Promise.allSettled(forwards).catch(() => {});
+    )
+  ).then((results) => {
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        console.warn(
+          `[telemetry-ingest] ${LAYER1_TARGETS[i].name} rejected:`,
+          result.reason
+        );
+      }
+    });
+  });
 
   return {
     status: 202,
-    body: { accepted: true, routed_to },
+    body: { status: 'accepted', execution_id: telemetry.execution_id },
   };
 }
