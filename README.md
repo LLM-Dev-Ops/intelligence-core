@@ -8,7 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-ES2022-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Zero Dependencies](https://img.shields.io/badge/Runtime_Deps-Zero-success?style=for-the-badge&logo=npm&logoColor=white)](#-tech-stack)
-[![License](https://img.shields.io/badge/License-PSACL_v1.0-blue?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-PSACL_v1.0-blue?style=for-the-badge&logo=brain&logoColor=white)](LICENSE.md)
 [![Version](https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge&logo=semver&logoColor=white)](package.json)
 
 <br />
@@ -16,6 +16,11 @@
 **The top-layer intelligence aggregation service in the LLM DevOps stack.**
 <br />
 Consumes data from all Layer 2 services to provide unified insights, health scoring, and actionable recommendations.
+
+<br />
+
+> **Proprietary Software** — This product is commercially licensed under the [PSACL v1.0](LICENSE.md).
+> A valid license is required for production use. Contact **sales@globalbusinessadvisors.co** for licensing.
 
 <br />
 
@@ -154,16 +159,30 @@ intelligence-core/
 
 ## 🚀 Getting Started
 
+### 📜 Licensing
+
+Intelligence Core is proprietary software. Usage is governed by the [PSACL v1.0](LICENSE.md).
+
+| Use Case | License Required |
+|:--|:--|
+| Internal evaluation, testing, research | No — permitted under Non-Production Use |
+| Production, commercial, hosted, or customer-facing use | **Yes** — paid commercial license required |
+| Redistribution, forking, or republishing | **Prohibited** |
+
+To obtain a commercial license, contact **sales@globalbusinessadvisors.co**.
+
 ### 📋 Prerequisites
 
 - **Node.js** ≥ 18.x
 - **npm** ≥ 9.x
+- A valid **commercial license** (for production use)
 
 ### ⬇️ Installation
 
+Licensed customers receive access through private distribution. Follow the instructions provided with your license agreement.
+
 ```bash
-# Clone the repository
-git clone <repository-url>
+# After obtaining repository access via your license agreement
 cd intelligence-core
 
 # Install dependencies
@@ -272,7 +291,7 @@ node dist/cli.js help
 
 ## 🔧 SDK Usage
 
-Use Intelligence Core programmatically via the SDK:
+Use Intelligence Core programmatically via the SDK. The package is distributed to licensed customers through private channels — see your license agreement for registry configuration.
 
 ```typescript
 import { create } from '@llm-devops/intelligence-core';
@@ -345,9 +364,16 @@ npx tsx --test tests/execution-lifecycle-subscriber.test.ts
 
 ## 📜 License
 
-This project is licensed under the **LLM DevOps Permanent Source-Available Commercial License (PSACL v1.0)**.
+This project is proprietary software licensed under the **LLM DevOps Permanent Source-Available Commercial License (PSACL v1.0)**. This is **not** open-source software.
 
-© 2025 Global Business Advisors Inc. — See [LICENSE.md](LICENSE.md) for full details.
+- Source code is viewable for evaluation and non-production use only
+- Production, commercial, hosted, or embedded use requires a paid commercial license
+- Redistribution, forking, and republishing are prohibited
+- This license will **not** convert to an open-source license at any time
+
+For commercial licensing inquiries, contact **sales@globalbusinessadvisors.co**.
+
+© 2025 Global Business Advisors Inc. — See [LICENSE.md](LICENSE.md) for full terms.
 
 <br />
 
