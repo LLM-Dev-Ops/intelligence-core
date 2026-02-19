@@ -3,6 +3,8 @@
 <!-- Header Banner -->
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:161b22,100:1f6feb&height=220&section=header&text=Intelligence%20Core&fontSize=52&fontColor=ffffff&fontAlignY=35&desc=Layer%203%20%E2%80%A2%20Intelligence%20Aggregation%20%26%20Analysis&descSize=18&descAlignY=55&descColor=8b949e&animation=fadeIn" width="100%" />
 
+# Intelligence Core
+
 <br />
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
