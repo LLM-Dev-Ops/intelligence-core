@@ -120,3 +120,71 @@ test('getAvailableSystems returns all system names', () => {
   assert.ok(systems.includes('benchmark'), 'Should include benchmark');
   assert.ok(systems.includes('latency-lens'), 'Should include latency-lens');
 });
+
+
+test('query boundaries reject invalid and reversed time ranges', () => {
+  const service = new QueryService();
+  const now = new Date();
+
+  assert.throws(
+    () => service.queryByTimeRange({ start: new Date('invalid'), end: now }),
+    { name: 'TypeError' }
+  );
+  assert.throws(
+    () => service.queryByTimeRange({ start: new Date(now.getTime() + 1), end: now }),
+    { name: 'RangeError' }
+  );
+});
+
+test('query boundaries reject unsafe pagination', () => {
+  const service = new QueryService();
+
+  for (const options of [
+    { limit: -1 },
+    { limit: 1.5 },
+    { limit: 1001 },
+    { offset: -1 },
+    { offset: Number.MAX_SAFE_INTEGER + 1 },
+  ]) {
+    assert.throws(
+      () => service.queryBySystem('telemetry', options),
+      { name: 'RangeError' }
+    );
+  }
+});
+
+test('query boundaries reject invalid sort order and system names', () => {
+  const service = new QueryService();
+
+  assert.throws(
+    () => service.queryBySystem('telemetry', { sortOrder: 'sideways' as 'asc' }),
+    { name: 'TypeError' }
+  );
+  assert.throws(
+    () => service.queryBySystem('bad\nname'),
+    { name: 'TypeError' }
+  );
+});
+
+test('query boundaries preserve valid maximum pagination', () => {
+  const service = new QueryService();
+  const signals: IntelligenceSignal[] = Array.from({ length: 5 }, (_, index) => ({
+    source: 'telemetry',
+    timestamp: new Date(Date.now() - index),
+    data: { index },
+  }));
+  service.storeSignals(signals);
+
+  const result = service.queryBySystem('telemetry', {
+    limit: 1000,
+    offset: 0,
+    sortOrder: 'asc',
+  });
+
+  assert.strictEqual(result.signals.length, 5);
+  assert.strictEqual(result.count, 5);
+  assert.ok(
+    result.signals[0].timestamp.getTime() <=
+      result.signals[result.signals.length - 1].timestamp.getTime()
+  );
+});
