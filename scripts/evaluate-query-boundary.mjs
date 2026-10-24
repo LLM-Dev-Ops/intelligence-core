@@ -78,7 +78,7 @@ const evaluateHoldout = (dir) => {
 const evaluateAnchors = (dir) => {
   const commands = [
     run(dir, ['npm', 'run', 'build']),
-    run(dir, [process.execPath, '--import', 'tsx', '--test', 'tests/*.test.ts']),
+    run(dir, ['bash', '-lc', 'node --import tsx --test tests/*.test.ts']),
     run(dir, ['npm', 'audit', '--omit=dev', '--audit-level=low']),
   ];
   return { itemWins: commands.map((command) => command.ok), commands };
