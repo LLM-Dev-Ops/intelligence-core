@@ -5,7 +5,10 @@
  * intelligence summaries and system-specific signals.
  */
 
-import { IntelligenceSummary, IntelligenceSignal } from './intelligence-aggregator.service.js';
+import type {
+  IntelligenceSummary,
+  IntelligenceSignal,
+} from './intelligence-aggregator.service.js';
 
 export interface TimeRange {
   start: Date;
@@ -24,19 +27,80 @@ export interface SystemQueryResult {
   count: number;
 }
 
+interface NormalizedQueryOptions {
+  limit: number;
+  offset: number;
+  sortOrder: 'asc' | 'desc';
+}
+
+const DEFAULT_QUERY_LIMIT = 100;
+export const MAX_QUERY_LIMIT = 1000;
+export const MAX_SYSTEM_NAME_LENGTH = 128;
+
+function normalizeOptions(options: QueryOptions): NormalizedQueryOptions {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('query options must be an object');
+  }
+
+  const limit = options.limit ?? DEFAULT_QUERY_LIMIT;
+  const offset = options.offset ?? 0;
+  const sortOrder = options.sortOrder ?? 'desc';
+
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_QUERY_LIMIT) {
+    throw new RangeError(`limit must be a safe integer between 1 and ${MAX_QUERY_LIMIT}`);
+  }
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw new RangeError('offset must be a non-negative safe integer');
+  }
+  if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+    throw new TypeError("sortOrder must be either 'asc' or 'desc'");
+  }
+
+  return { limit, offset, sortOrder };
+}
+
+function validateTimeRange(timeRange: TimeRange): void {
+  if (!timeRange || typeof timeRange !== 'object' || Array.isArray(timeRange)) {
+    throw new TypeError('timeRange must be an object');
+  }
+
+  const start = timeRange.start;
+  const end = timeRange.end;
+  if (
+    !(start instanceof Date) ||
+    !(end instanceof Date) ||
+    !Number.isFinite(start.getTime()) ||
+    !Number.isFinite(end.getTime())
+  ) {
+    throw new TypeError('timeRange start and end must be valid Date instances');
+  }
+  if (start.getTime() > end.getTime()) {
+    throw new RangeError('timeRange start must not be after end');
+  }
+}
+
+function validateSystemName(systemName: string): void {
+  if (
+    typeof systemName !== 'string' ||
+    systemName.length === 0 ||
+    systemName.length > MAX_SYSTEM_NAME_LENGTH ||
+    /[\u0000-\u001f\u007f]/.test(systemName)
+  ) {
+    throw new TypeError(
+      `systemName must be a non-empty printable string no longer than ${MAX_SYSTEM_NAME_LENGTH} characters`
+    );
+  }
+}
+
 export class QueryService {
   private summaries: IntelligenceSummary[] = [];
   private signalsBySystem: Map<string, IntelligenceSignal[]> = new Map();
-
-  constructor() {}
 
   /**
    * Store a new intelligence summary (internal use)
    */
   storeSummary(summary: IntelligenceSummary): void {
     this.summaries.push(summary);
-
-    // Sort by timestamp descending (most recent first)
     this.summaries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
@@ -65,20 +129,21 @@ export class QueryService {
     timeRange: TimeRange,
     options: QueryOptions = {}
   ): IntelligenceSummary[] {
-    const { limit = 100, offset = 0, sortOrder = 'desc' } = options;
+    validateTimeRange(timeRange);
+    const { limit, offset, sortOrder } = normalizeOptions(options);
 
-    let filtered = this.summaries.filter(
+    const filtered = this.summaries.filter(
       summary =>
         summary.timestamp >= timeRange.start &&
         summary.timestamp <= timeRange.end
     );
 
-    // Apply sort order
-    if (sortOrder === 'asc') {
-      filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    }
+    filtered.sort((a, b) =>
+      sortOrder === 'asc'
+        ? a.timestamp.getTime() - b.timestamp.getTime()
+        : b.timestamp.getTime() - a.timestamp.getTime()
+    );
 
-    // Apply pagination
     return filtered.slice(offset, offset + limit);
   }
 
@@ -89,25 +154,20 @@ export class QueryService {
     systemName: string,
     options: QueryOptions = {}
   ): SystemQueryResult {
-    const { limit = 100, offset = 0, sortOrder = 'desc' } = options;
-
+    validateSystemName(systemName);
+    const { limit, offset, sortOrder } = normalizeOptions(options);
     const allSignals = this.signalsBySystem.get(systemName) || [];
+    const signals = [...allSignals];
 
-    let signals = [...allSignals];
-
-    // Sort by timestamp
-    if (sortOrder === 'desc') {
-      signals.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    } else {
-      signals.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    }
-
-    // Apply pagination
-    const paginatedSignals = signals.slice(offset, offset + limit);
+    signals.sort((a, b) =>
+      sortOrder === 'desc'
+        ? b.timestamp.getTime() - a.timestamp.getTime()
+        : a.timestamp.getTime() - b.timestamp.getTime()
+    );
 
     return {
       system: systemName,
-      signals: paginatedSignals,
+      signals: signals.slice(offset, offset + limit),
       count: allSignals.length
     };
   }
@@ -120,29 +180,26 @@ export class QueryService {
     timeRange: TimeRange,
     options: QueryOptions = {}
   ): SystemQueryResult {
-    const { limit = 100, offset = 0, sortOrder = 'desc' } = options;
-
+    validateSystemName(systemName);
+    validateTimeRange(timeRange);
+    const { limit, offset, sortOrder } = normalizeOptions(options);
     const allSignals = this.signalsBySystem.get(systemName) || [];
 
-    let filtered = allSignals.filter(
+    const filtered = allSignals.filter(
       signal =>
         signal.timestamp >= timeRange.start &&
         signal.timestamp <= timeRange.end
     );
 
-    // Sort by timestamp
-    if (sortOrder === 'desc') {
-      filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    } else {
-      filtered.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    }
-
-    // Apply pagination
-    const paginatedSignals = filtered.slice(offset, offset + limit);
+    filtered.sort((a, b) =>
+      sortOrder === 'desc'
+        ? b.timestamp.getTime() - a.timestamp.getTime()
+        : a.timestamp.getTime() - b.timestamp.getTime()
+    );
 
     return {
       system: systemName,
-      signals: paginatedSignals,
+      signals: filtered.slice(offset, offset + limit),
       count: filtered.length
     };
   }
