@@ -38,7 +38,7 @@ const cases = [
   ['negative offset', () => service.queryBySystem('telemetry', { offset: -1 })],
   ['unsafe offset', () => service.queryBySystem('telemetry', { offset: Number.MAX_SAFE_INTEGER + 1 })],
   ['invalid sort', () => service.queryBySystem('telemetry', { sortOrder: 'sideways' })],
-  ['invalid system', () => service.queryBySystem('bad\\nname')],
+  ['invalid system', () => service.queryBySystem('bad\nname')],
 ];
 const itemWins = cases.map(([, run]) => {
   try {
